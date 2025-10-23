@@ -1,61 +1,76 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
-  <meta charset="utf-8">
-  <title>HabitTracker</title>
-  <header>HabitTracker</header>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>HabitHero</title>
   <style>
     body{margin:0;background:#0f1320;color:#e9ecf1;font-family:system-ui,Arial,sans-serif}
     .wrap{max-width:820px;margin:auto;padding:16px}
-    h1{margin:6px 0} .sub{color:#aab2c7;margin:0 0 10px}
-    .bar{display:flex;gap:10px;align-items:center;background:#18213f;padding:10px;border-radius:12px}
-    input{background:#111a33;color:#e9ecf1;border:1px solid #2b3a6f;border-radius:10px;padding:6px 8px}
+    h1{margin:6px 0}.sub{color:#aab2c7;margin:0 0 10px}
+    .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#18213f;padding:10px;border-radius:12px}
+    input,select{background:#111a33;color:#e9ecf1;border:1px solid #2b3a6f;border-radius:10px;padding:6px 8px}
     .grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:12px}
     .card{background:#18213f;border-radius:12px;padding:12px}
-    .row{display:flex;justify-content:space-between;align-items:center}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
     .name{margin:0;font-size:1.05rem;cursor:pointer}
     .tiny{font-size:.85rem;color:#aab2c7}
     button{border:0;border-radius:10px;padding:6px 10px;cursor:pointer}
-    .btn{background:#2a3566;color:#fff} .plus{background:#6bd97b;color:#0b1a0e;font-weight:700}
-    .minus{background:#ff8a8a;color:#4a0f0f;font-weight:700}
+    .btn{background:#2a3566;color:#fff}.plus{background:#0fdc2e;color:#0b1a0e;font-weight:700}
+    .minus{background:#e74141;color:#4a0f0f;font-weight:700}
+    .pbar{height:10px;background:#101838;border-radius:8px;overflow:hidden;margin-top:6px}
+    .pfill{height:100%;background:#6bd97b}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>HabitTracker</h1>
-    <p class="sub">Click +/− to log for the selected day. Data saves in your browser.</p>
+    <h1>HabitHero</h1>
+    <p class="sub">Click +/− to log your habits for the selected day. Progress saves automatically.</p>
 
     <div class="bar">
-      <label for="day">Date:</label>
-      <input id="day" type="date">
+      <label for="day">Date:</label><input id="day" type="date">
       <span id="today" class="tiny"></span>
-      <input id="newHabit" placeholder="Add habit (e.g., Meditate)">
-      <button id="add" class="btn">Add</button>
-      <span class="tiny">Tip: click a habit name to delete it.</span>
+      <input id="newHabit" placeholder="Add habit (e.g., Meditate)"><button id="add" class="btn">Add</button>
+      <label for="range" class="tiny">Progress:</label>
+      <select id="range"><option value="7">Week (7d)</option><option value="30">Month (30d)</option></select>
     </div>
 
     <div id="list" class="grid"></div>
+
+    <div class="card" id="summaryCard">
+      <div class="row"><strong>Progress</strong><span class="tiny" id="summaryLabel"></span></div>
+      <div id="summary"></div>
+    </div>
   </div>
 
 <script>
-const KEY="habit_tracker_min_v1";
-const $=q=>document.querySelector(q);
-const H=()=>({habits:["Workout","Read","Water"],logs:{}});
+const KEY="habit_hero_v1",$=q=>document.querySelector(q),H=()=>({habits:["Workout","Read","Water"],logs:{}});
 let S=JSON.parse(localStorage.getItem(KEY)||"null")||H();
-
 const dfix=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000);
 const today=()=>dfix(new Date()).toISOString().slice(0,10);
 const addDays=(s,n)=>{let d=new Date(s);d.setDate(d.getDate()+n);return dfix(d).toISOString().slice(0,10);};
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
-const ensure=(ds)=>{S.logs[ds]=S.logs[ds]||{};S.habits.forEach(h=>S.logs[ds][h]=S.logs[ds][h]??0);};
+const ensure=ds=>{S.logs[ds]=S.logs[ds]||{};S.habits.forEach(h=>S.logs[ds][h]=S.logs[ds][h]??0);};
 const sumRange=(h,end,days)=>{let t=0;for(let i=days-1;i>=0;i--){let ds=addDays(end,-i);t+=((S.logs[ds]||{})[h]||0);}return t;};
 const streak=(h,end)=>{let s=0,i=0;for(;;){let ds=addDays(end,-i),v=((S.logs[ds]||{})[h]||0);if(v>0){s++;i++;}else break;if(i>3660)break;}return s;};
+
+function renderSummary(ds){
+  const days=parseInt($("#range").value,10), sumDiv=$("#summary"); sumDiv.innerHTML="";
+  const totals=S.habits.map(h=>({h,t:sumRange(h,ds,days)})); const max=Math.max(1,...totals.map(x=>x.t));
+  $("#summaryLabel").textContent=`Totals for last ${days} day(s) ending ${ds}`;
+  totals.forEach(({h,t})=>{
+    const row=document.createElement("div");
+    const pct=Math.round((t/max)*100);
+    row.innerHTML=`<div class="tiny"><strong>${h}</strong> — ${t}</div>
+                   <div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`;
+    sumDiv.appendChild(row);
+  });
+}
 
 const render=()=>{
   const ds=$("#day").value; ensure(ds);
   const L=$("#list"); L.innerHTML="";
   S.habits.forEach(h=>{
-    const v=S.logs[ds][h]||0, W=sumRange(h,ds,7), M=sumRange(h,ds,30), st=streak(h,ds);
+    const v=S.logs[ds][h]||0,W=sumRange(h,ds,7),M=sumRange(h,ds,30),st=streak(h,ds);
     const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="row"><h3 class="name" title="Click to delete">${h}</h3>
       <div><button class="minus">−1</button> <button class="plus">+1</button></div></div>
@@ -65,11 +80,12 @@ const render=()=>{
     card.querySelector(".name").onclick=()=>{if(confirm(`Delete "${h}"? (Past data kept)`)){S.habits=S.habits.filter(x=>x!==h);save();render();}};
     L.appendChild(card);
   });
+  renderSummary(ds);
 };
 
 document.addEventListener("DOMContentLoaded",()=>{
   $("#day").value=today(); $("#today").textContent="Today: "+today();
-  $("#day").onchange=render;
+  $("#day").onchange=render; $("#range").onchange=render;
   $("#add").onclick=()=>{const n=$("#newHabit").value.trim(); if(!n)return;
     if(S.habits.includes(n))return alert("That habit already exists.");
     S.habits.push(n); $("#newHabit").value=""; save(); render();

@@ -27,5 +27,5 @@ Track progress, view streaks, and stay consistent — all in a clean, easy-to-us
 [@daestrada911-dot](https://github.com/daestrada911-dot)
 
 ---
-Thank you for professor pogue and chatgpt 
+
 *Final Project – Lewis University • Intro to Computer Science*

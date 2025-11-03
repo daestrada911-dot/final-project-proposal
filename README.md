@@ -22,10 +22,10 @@ Track progress, view streaks, and stay consistent — all in a clean, easy-to-us
 ---
 
 ### 👨‍💻 Author
-
+Thank you for professor pogue and chatgpt 
 **Diego Adolfo Estrada**  
 [@daestrada911-dot](https://github.com/daestrada911-dot)
 
 ---
-Thankyou for professor poge and chat gppt 
+Thank you for professor pogue and chatgpt 
 *Final Project – Lewis University • Intro to Computer Science*
